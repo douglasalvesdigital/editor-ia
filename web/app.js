@@ -105,7 +105,10 @@ async function carregar(){
   $("#nome-projeto").textContent = proj.nome;
   player.src = "/midia/fonte";
 
-  estilo = { ...ESTILO_PADRAO, ...(proj.estilo || {}) };
+  // o servidor já resolve o estilo sobre o padrão (pipeline/plano.py). Ter um
+  // padrão aqui também foi o que fez o inspetor dizer "legenda: Frase" com a
+  // pista de legenda vazia num projeto recém-preparado.
+  estilo = proj.estilo;
   await recarregarRecursos();
   await recarregarPlano();
 
@@ -176,7 +179,17 @@ const PISTAS = {
 };
 
 const baseFonte = () => passo === "corte";
-const duracaoBase = () => baseFonte() ? proj.duracao : duracaoSaida();
+
+// Com o arquivo renderizado no player, a régua da timeline é a duração REAL
+// dele, não a prevista. Os dois diferem por quantização de quadro: cada
+// segmento é cortado na fronteira do frame e ganha alguns ms — medido, +0,25s
+// em 6 emendas. Usar a previsão aqui arrastaria o cursor uns 0,3% ao longo do
+// vídeo, que é o mesmo tipo de mentira que esta reforma veio tirar.
+function duracaoBase(){
+  if (baseFonte()) return proj.duracao;
+  if (fontePlayer === "final" && player.duration > 0) return player.duration;
+  return duracaoSaida();
+}
 
 function thumbSrc(tFonte){
   const n = proj.n_thumbs || 0;
@@ -747,26 +760,9 @@ $("#btn-avancar").addEventListener("click", () => {
    camada que ela afeta.
    ================================================================ */
 
-const ESTILO_PADRAO = {
-  tipo: "limpa",
-  cor: "#EE8656",
-  headline_estilo: "contorno",
-  headline: "",
-  legenda: "ili-frase",
-  zoom: true,
-  zoom_animado: false,
-  flash: false,
-  cor_look: true,
-  trilha: false,
-  broll: false,
-  caixa: "minuscula",
-  altura_legenda: 0.20,
-  lut: "",
-  encerramento: false,
-  observacoes: "",
-};
-
-let estilo = { ...ESTILO_PADRAO };
+// O padrão vive em pipeline/plano.py e chega pronto no /api/projeto. Aqui só
+// existe o objeto vazio pro caso de o carregamento falhar antes da resposta.
+let estilo = {};
 
 const NOMES = {
   limpa:"tela limpa", dividida:"dividida (apoio em cima)", dividida2:"dividida (apoio embaixo)",
@@ -812,8 +808,6 @@ function op(valor, atual, rotulo, sub=""){
 function grupo(titulo, corpo){
   return `<div class="insp-grupo"><label>${esc(titulo)}</label>${corpo}</div>`;
 }
-
-function chave(k, corpo){ return `<div data-campo="${k}">${corpo}</div>`; }
 
 function toggle(id, ligado, rotulo, sub, {desligado=false, alerta=""}={}){
   return `<label class="tg${desligado ? " desligado" : ""}${alerta ? " com-alerta" : ""}">
@@ -1104,8 +1098,15 @@ function sugerirHeadline(){
    ================================================================ */
 
 function pintarEntrega(){
+  // Enquanto não há arquivo, a duração é previsão. Depois que há, é medida —
+  // e as duas não batem exatamente: o corte acontece na fronteira do quadro.
+  const real = recursos.final?.duracao;
+  const emDia = recursos.final?.existe && !recursos.final?.desatualizado;
+  const dur = emDia && real
+    ? `<b>${fmt(real)}</b> de vídeo <small>(medido no arquivo)</small>`
+    : `<b>${fmt(duracaoSaida())}</b> de vídeo <small>(previsto)</small>`;
   $("#resumo-entrega").innerHTML =
-    `<b>${fmt(duracaoSaida())}</b> de vídeo · ${esc(resumoCurto())}`
+    `${dur} · ${esc(resumoCurto())}`
     + (estilo.headline?.trim() && estilo.headline_estilo !== "nenhuma"
        ? ` · headline “${esc(estilo.headline.split("\n")[0])}”` : "")
     + ` · destaque <b>${esc(estilo.cor.toUpperCase())}</b>`;

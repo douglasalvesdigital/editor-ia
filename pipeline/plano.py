@@ -25,6 +25,37 @@ from . import export_ass
 
 DUR_ENCERRAMENTO = 2.5
 
+# O padrao de um projeto que ainda nao escolheu nada.
+#
+# Mora AQUI e em nenhum outro lugar. Enquanto ele viveu tambem no
+# ESTILO_PADRAO do app.js, um projeto recem-preparado (`estilo: null`) abria
+# com o inspetor dizendo "legenda: Frase" e a pista de legenda vazia na
+# timeline — o servidor lia `{}` e concluia "nenhuma". Dois padroes sao duas
+# verdades, que e exatamente o que este modulo existe pra impedir.
+ESTILO_PADRAO = {
+    "tipo": "limpa",
+    "cor": "#EE8656",
+    "headline_estilo": "contorno",
+    "headline": "",
+    "legenda": "ili-frase",
+    "zoom": True,
+    "zoom_animado": False,
+    "flash": False,
+    "cor_look": True,
+    "trilha": False,
+    "broll": False,
+    "caixa": "minuscula",
+    "altura_legenda": 0.20,
+    "lut": "",
+    "encerramento": False,
+    "observacoes": "",
+}
+
+
+def com_padrao(estilo: dict | None) -> dict:
+    """O estilo do projeto por cima do padrao — como todo mundo deve ler."""
+    return {**ESTILO_PADRAO, **(estilo or {})}
+
 
 def _ativos(edl: dict) -> list[dict]:
     return sorted([t for t in edl.get("takes", []) if t.get("ativo", True)],
@@ -66,7 +97,7 @@ def montar(edl: dict, estilo: dict, recursos: dict | None = None) -> dict:
     fim, luts). E ele que permite dizer "voce ligou b-roll e nao ha imagem",
     em vez de deixar o render decidir isso calado.
     """
-    estilo = estilo or {}
+    estilo = com_padrao(estilo)
     rec = recursos or {}
     refs = list(rec.get("referencias") or [])
     tem_trilha = bool(rec.get("trilha"))

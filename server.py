@@ -162,7 +162,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_error(403)
 
         if rota == "/api/projeto":
-            return self._json(carregar_edl())
+            # o estilo sai daqui JA resolvido sobre o padrao, pra interface nao
+            # precisar ter uma segunda copia do padrao pra chutar
+            from pipeline import plano
+            edl = carregar_edl()
+            edl["estilo"] = plano.com_padrao(edl.get("estilo"))
+            return self._json(edl)
 
         if rota == "/api/recursos":
             return self._json(recursos())
@@ -173,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
             # arquivo tem" — ver pipeline/plano.py.
             from pipeline import plano
             edl = carregar_edl()
-            return self._json(plano.montar(edl, edl.get("estilo") or {}, recursos()))
+            return self._json(plano.montar(edl, edl.get("estilo"), recursos()))
 
 
         if rota == "/midia/fonte":
@@ -461,6 +466,22 @@ ENTREGAVEIS = [
 ]
 
 
+def _duracao(arquivo: Path) -> float:
+    """Duracao MEDIDA do arquivo, nao a prevista.
+
+    O plano preve somando os takes; o render corta na fronteira do quadro e o
+    arquivo sai alguns centesimos mais longo (medido: +0,25s em 6 emendas).
+    Depois que o arquivo existe, quem manda e ele.
+    """
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", str(arquivo)], capture_output=True, text=True)
+        return round(float((r.stdout or "0").strip() or 0), 3)
+    except Exception:
+        return 0.0
+
+
 def recursos() -> dict:
     """O que a PASTA tem de verdade — e o que ja foi entregue.
 
@@ -487,6 +508,8 @@ def recursos() -> dict:
         })
 
     final = next((s for s in saidas if s["arquivo"] == "final.mp4"), None)
+    if final:
+        final["duracao"] = _duracao(EDIT / "final.mp4")
     return {
         "luts": [p.stem for p in achar_luts()],
         "encerramento": enc.name if enc else "",
@@ -494,7 +517,8 @@ def recursos() -> dict:
         "referencias": [p.name for p in achar_referencias()],
         "saidas": saidas,
         "final": ({"existe": True, "quando": final["quando"],
-                   "desatualizado": final["desatualizado"], "url": final["url"]}
+                   "desatualizado": final["desatualizado"], "url": final["url"],
+                   "duracao": final["duracao"]}
                   if final else {}),
     }
 
@@ -525,7 +549,8 @@ def exportar(formatos: list[str], estilo: dict) -> list[str]:
     info = edl.get("info", {})
     gerados = []
 
-    estilo = estilo or {}
+    from pipeline import plano
+    estilo = plano.com_padrao(estilo)   # mesmo padrao que a timeline desenhou
     legenda = estilo.get("legenda") or "nenhuma"
     look = "ili" if estilo.get("cor_look") else "nenhum"
     headline = estilo.get("headline") or ""

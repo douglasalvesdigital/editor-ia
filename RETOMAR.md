@@ -26,22 +26,42 @@ Prévia ao vivo em canvas. Formatos 9:16, 4:5 e 1:1.
 **Saídas** — `final.mp4`, `sequencia.xml` (Premiere), `master.srt`,
 `legenda.ass`, `capa.jpg`.
 
+## Reforma da interface (branch `reforma-editor`)
+
+Os itens 1 e 2 da lista de pendências saíram. Ver `AUDITORIA.md` para o
+levantamento completo, com as medidas.
+
+- **3 passos lineares** — Corte → Edição → Entrega. A aba Estilo deixou de
+  existir: cada opção virou propriedade da camada a que pertence. A Capa foi
+  para a Entrega, junto do render.
+- **Timeline com 7 pistas** — headline, legenda, b-roll, motion, vídeo, áudio,
+  trilha — em tempo de saída. Clicar num clipe abre as propriedades dele.
+- **`pipeline/plano.py`** — fonte única do que a edição contém. A timeline
+  desenha o que o render executa; a legenda vem de `export_ass.blocos()`, o
+  mesmo código que escreve o `.ass`.
+- **O render lê o estilo salvo**, não parâmetros vindos no POST.
+
+Medido antes e depois, com o arquivo final no player aos 80s: o playhead ia
+para 28% quando devia ir para 84,87%; agora vai para 84,866%.
+
 ## Pendências, em ordem
 
-1. **Colapsar as 4 abas em 3 passos lineares** (Cortar → Visual → Exportar)
-   com indicador de progresso. É a maior queixa de usabilidade: hoje o fluxo
-   reflete o modelo de quem construiu, não o de quem usa.
-2. **Legendas na timeline** — a referência mostra, e ajuda a ler o ritmo.
-3. **Lista de projetos recentes** ao abrir vídeo.
-4. **Importar `sequencia.xml` no Premiere** — nunca foi aberto lá. Única parte
+1. **Legenda desliza em relação ao vídeo.** Os tempos do `.ass` somam durações
+   cruas dos takes, mas o render corta na fronteira do quadro e cada segmento
+   sai alguns ms mais longo — medido, **+0,25s ao longo de 6 emendas**. No fim
+   de um vídeo longo a legenda aparece adiantada. Conserto: quantizar o
+   acumulado em `_palavras_na_saida` pelo fps. Mexe no `export_ass` e no
+   `export_srt`, então pede rodar a suíte inteira depois.
+2. **Lista de projetos recentes** ao abrir vídeo.
+3. **Importar `sequencia.xml` no Premiere** — nunca foi aberto lá. Única parte
    verificada só no papel.
-5. **Múltiplos brutos num vídeo** — não existe. O `edl.json` tem uma única
+4. **Múltiplos brutos num vídeo** — não existe. O `edl.json` tem uma única
    `fonte`. Meio dia de trabalho e muda o formato (projetos atuais teriam que
    ser reprocessados). Na campanha de julho cada vídeo usa um bruto só, então
    não está bloqueando.
-6. **Inserção de imagem em tela cheia** — hoje b-roll só na tela dividida.
-7. **Mais estilos** — a referência tem 4 de headline e 6 de legenda; temos 2 e 3.
-8. **Movimento de tracking** e **detecção de muleta** — os dois caros.
+5. **Inserção de imagem em tela cheia** — hoje b-roll só na tela dividida.
+6. **Mais estilos** — a referência tem 4 de headline e 6 de legenda; temos 2 e 3.
+7. **Movimento de tracking** e **detecção de muleta** — os dois caros.
 
 ## Decisão em aberto
 
