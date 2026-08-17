@@ -6,7 +6,7 @@
 <title>ili · editor</title>
 <link rel="stylesheet" href="/web/style.css">
 </head>
-<body data-passo="corte">
+<body data-fase="1">
 
 <header class="topo">
   <div class="ident">
@@ -21,192 +21,314 @@
     <button id="btn-desfazer" class="btn" disabled title="nada para desfazer">↶ Desfazer</button>
     <button id="btn-abrir" class="btn">Abrir vídeo</button>
     <button id="btn-pasta" class="btn">Abrir pasta</button>
+    <button id="btn-aprovar" class="btn primario">Aprovar corte</button>
   </div>
 </header>
 
-<!-- Três passos, na ordem em que o trabalho acontece. Antes eram quatro abas
-     soltas ("Corte", "Estilo", "Visual", "Capa") em que duas eram fases
-     numeradas e duas não, e nada dizia por onde começar. -->
-<nav class="passos">
-  <button class="passo" data-passo="corte">
-    <b>1</b><span>Corte<small id="rot-corte">o que fica no vídeo</small></span>
-  </button>
-  <i class="seta">→</i>
-  <button class="passo" data-passo="edicao">
-    <b>2</b><span>Edição<small id="rot-edicao">como o vídeo fica</small></span>
-  </button>
-  <i class="seta">→</i>
-  <button class="passo" data-passo="entrega">
-    <b>3</b><span>Entrega<small id="rot-entrega">gerar os arquivos</small></span>
-  </button>
-  <div class="passo-acao">
-    <button id="btn-avancar" class="btn primario">Ir para a Edição →</button>
-  </div>
+<nav class="abas">
+  <button class="aba ativa" data-fase="1"><b>FASE 1</b> Corte</button>
+  <button class="aba" data-fase="estilo">Estilo</button>
+  <button class="aba" data-fase="2"><b>FASE 2</b> Visual</button>
+  <button class="aba" data-fase="capa">Capa</button>
+  <span class="dica-fase" id="dica-fase">ajuste o corte e aprove</span>
 </nav>
+
+<section class="painel-estilo" id="painel-estilo">
+  <div class="estilo-conteudo">
+    <h2 class="titulo-estilo">Como vamos montar a Fase 2?</h2>
+
+    <div class="secao">
+      <label>Tipo de edição</label>
+      <div class="cards" id="cards-tipo">
+        <button class="card sel" data-tipo="limpa">
+          <div class="mini-arte arte-limpa"></div><span>Limpa</span>
+        </button>
+        <button class="card" data-tipo="dividida">
+          <div class="mini-arte arte-div"></div><span>Tela dividida</span>
+        </button>
+        <button class="card" data-tipo="dividida2">
+          <div class="mini-arte arte-div2"></div><span>Tela dividida 2</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Cor de destaque</label>
+      <div class="linha-cor">
+        <input type="color" id="cor-destaque" value="#EE8656">
+        <input type="text" id="cor-hex" class="campo campo-hex" value="#EE8656"
+          spellcheck="false" aria-label="cor de destaque em hexadecimal"
+          placeholder="#RRGGBB">
+        <div class="swatches" id="swatches">
+          <button class="sw" style="--c:#EE8656" data-cor="#EE8656" title="laranja ili"></button>
+          <button class="sw" style="--c:#D23089" data-cor="#D23089" title="rosa ili"></button>
+          <button class="sw" style="--c:#00FF91" data-cor="#00FF91" title="verde"></button>
+          <button class="sw" style="--c:#FFD400" data-cor="#FFD400" title="amarelo"></button>
+          <button class="sw" style="--c:#FFFFFF" data-cor="#FFFFFF" title="branco"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Estilo de headline</label>
+      <div class="cards" id="cards-headline">
+        <button class="card largo sel" data-hl="contorno">
+          <span class="prev prev-contorno">É ASSIM QUE VAI<br>FICAR A SUA HEADLINE</span>
+          <span>Contorno</span>
+        </button>
+        <button class="card largo" data-hl="caixa">
+          <span class="prev prev-caixa">É ASSIM QUE VAI<br>FICAR A SUA HEADLINE</span>
+          <span>Caixa</span>
+        </button>
+        <button class="card largo" data-hl="nenhuma">
+          <span class="prev prev-vazio">sem headline</span>
+          <span>Nenhuma</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Estilo de legenda</label>
+      <div class="cards" id="cards-legenda">
+        <button class="card largo sel" data-leg="ili-frase">
+          <span class="prev prev-frase">é assim que <i>sua</i> legenda</span>
+          <span>Frase com ênfase</span>
+        </button>
+        <button class="card largo" data-leg="ili-palavra">
+          <span class="prev prev-palavra">legenda</span>
+          <span>Palavra por vez</span>
+        </button>
+        <button class="card largo" data-leg="ili-bloco">
+          <span class="prev prev-bloco">é assim que sua legenda<br>irá aparecer na tela</span>
+          <span>Bloco corrido</span>
+        </button>
+        <button class="card largo" data-leg="nenhuma">
+          <span class="prev prev-vazio">sem legenda</span>
+          <span>Nenhuma</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Caixa da legenda</label>
+      <div class="linha-radio">
+        <label class="mini"><input type="radio" name="caixa" value="minuscula" checked> minúscula</label>
+        <label class="mini"><input type="radio" name="caixa" value="maiuscula"> MAIÚSCULA</label>
+      </div>
+      <div class="linha-radio">
+        <span class="mini">altura da legenda</span>
+        <input type="range" id="altura-legenda" class="faixa" min="0.10" max="0.40" step="0.01" value="0.20">
+        <b id="altura-legenda-txt" class="mini">20%</b>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>LUT</label>
+      <div class="linha-radio">
+        <select id="lut" class="campo campo-sel">
+          <option value="">nenhum</option>
+        </select>
+        <span class="mini" id="lut-dica">coloque .cube em <code>editor-ia/luts</code></span>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Elementos da edição</label>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="el-zoom" checked>
+          <span>🔍 Automação de zoom in<small>punch-in fixo, um take sim outro não</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-zoomanim">
+          <span>🎞️ Zoom in e out nos cortes<small>o zoom se move ao longo do take</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-flash">
+          <span>⚡ Flash na transição<small>um quadro estourado na emenda</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-cor" checked>
+          <span>🎨 Colorização<small>dessaturado, look da marca</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-trilha">
+          <span>🎵 Trilha sonora com IA<small>largue trilha.mp3 na pasta do projeto</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-broll">
+          <span>🎬 Imagem de referência<small>b-roll na outra metade da tela dividida</small></span></label>
+        <label class="tg"><input type="checkbox" id="el-encerramento">
+          <span>🏁 Card de encerramento<small id="enc-dica">no fim do vídeo</small></span></label>
+        <label class="tg desligado"><input type="checkbox" id="el-tracking" disabled>
+          <span>🎯 Movimento de tracking<small>ainda não implementado</small></span></label>
+      </div>
+    </div>
+
+    <div class="secao">
+      <label>Observações para a Fase 2 (opcional)</label>
+      <textarea id="obs" class="campo" rows="2"
+        placeholder="ex: deixa a legenda mais em cima, corta mais seco no final"></textarea>
+    </div>
+
+    <div class="resumo" id="resumo-estilo"></div>
+  </div>
+</section>
 
 <main>
   <section class="palco">
     <div class="player-wrap">
       <video id="player" preload="auto" playsinline></video>
-      <div id="headline-preview" class="headline-prev"></div>
       <div id="legenda-preview" class="legenda"></div>
-      <div id="selo-player" class="selo-player">prévia do corte</div>
     </div>
 
     <div class="controles">
+      <button id="btn-play" class="btn-icone" title="espaço">▶</button>
       <button id="btn-inicio" class="btn-icone" title="voltar ao início">⏮</button>
-      <button id="btn-play" class="btn-icone grande" title="espaço">▶</button>
-      <div class="relogio">
-        <b id="t-atual">0:00,00</b><span>/</span><span id="t-final">0:00,00</span>
-      </div>
-      <label class="alternar" id="cx-pular">
+      <label class="alternar">
         <input type="checkbox" id="pular-cortes" checked>
-        <span>pular o que foi cortado</span>
+        <span>pular trechos removidos</span>
       </label>
-      <!-- O que está no player deixou de ser um par de radios perdido na
-           lateral: é o modo do próprio preview, ao lado dele. -->
-      <div class="segmento" id="fonte-player">
-        <button data-fonte="previa" class="sel">prévia</button>
-        <button data-fonte="final" disabled title="ainda não renderizado">arquivo final</button>
+      <div class="relogio">
+        <b id="t-atual">0:00,00</b> <span>/</span> <span id="t-final">0:00,00</span>
+        <i id="t-economia"></i>
       </div>
-      <span id="aviso-final" class="aviso-inline"></span>
     </div>
   </section>
 
-  <!-- ---------- lateral do passo 1: os takes ---------- -->
-  <aside class="lateral lat-corte">
-    <h2>Takes</h2>
-    <p class="ajuda">Clique para ir. Desmarque para tirar do corte.</p>
-    <ol id="lista-takes" class="lista-takes"></ol>
-  </aside>
-
-  <!-- ---------- lateral do passo 2: o inspetor ---------- -->
-  <aside class="lateral lat-edicao">
-    <div class="inspetor-topo">
-      <h2 id="insp-titulo">Projeto</h2>
-      <p class="ajuda" id="insp-sub">clique numa pista ou num clipe da timeline</p>
+  <aside class="lateral">
+    <!-- fase 1 -->
+    <div class="painel-fase1">
+      <h2>Takes</h2>
+      <p class="ajuda">Clique para ir. Desmarque para tirar do corte.</p>
+      <ol id="lista-takes" class="lista-takes"></ol>
     </div>
-    <div id="inspetor"></div>
+
+    <!-- fase 2: só confere e gera; quem configura é a aba Estilo -->
+    <div class="painel-fase2">
+      <div class="grupo">
+        <label>Headline</label>
+        <textarea id="headline" class="campo" rows="2"
+          placeholder="uma linha por linha da headline"></textarea>
+        <button id="btn-sugerir-hl" class="btn mini-btn">sugerir do 1º take</button>
+      </div>
+
+      <div class="grupo">
+        <label>O que está no player</label>
+        <div class="linha-radio">
+          <label class="mini"><input type="radio" name="fonte-player" value="previa" checked>
+            prévia do corte</label>
+          <label class="mini"><input type="radio" name="fonte-player" value="final" disabled>
+            resultado final</label>
+        </div>
+        <div id="aviso-final" class="aviso-inline"></div>
+      </div>
+
+      <div class="grupo">
+        <label>Vai sair assim</label>
+        <div class="resumo" id="resumo-fase2"></div>
+        <button class="btn mini-btn" id="ir-estilo">mudar na aba Estilo</button>
+      </div>
+
+      <div class="grupo">
+        <label>Gerar</label>
+        <button id="btn-mp4" class="btn primario">Renderizar MP4</button>
+        <button id="btn-premiere" class="btn">Sequência do Premiere + SRT</button>
+      </div>
+
+      <div class="grupo">
+        <label>Saídas</label>
+        <ul id="saidas" class="saida-lista"><li>nada gerado ainda</li></ul>
+      </div>
+    </div>
   </aside>
 </main>
 
-<!-- ---------- timeline ---------- -->
 <section class="timeline-bloco">
-  <div class="tl-cabeca">
-    <span class="tl-base" id="tl-base">timeline do bruto</span>
-    <span class="tl-dica" id="tl-dica"></span>
+  <div class="regua" id="regua"></div>
+  <div class="trilhas" id="trilhas">
+    <div class="rotulos"><span>vídeo</span><span>áudio</span></div>
+    <div class="pista" id="pista">
+      <div class="trilha-video" id="trilha-video"></div>
+      <canvas class="trilha-audio" id="trilha-audio"></canvas>
+      <div class="camada-takes" id="camada-takes"></div>
+      <div class="cursor" id="cursor"></div>
+    </div>
   </div>
-  <div class="regua-linha">
-    <div class="regua-rotulo"></div>
-    <div class="regua" id="regua"></div>
+  <div class="atalhos">
+    <kbd>espaço</kbd> play/pause
+    <kbd>←</kbd><kbd>→</kbd> frame a frame
+    <kbd>shift</kbd>+setas 1s
+    <kbd>S</kbd> divide no cursor
+    <kbd>delete</kbd> tira do corte
+    <kbd>shift</kbd>+<kbd>delete</kbd> apaga o take criado
+    <span><b>arraste numa área vazia para criar um take</b></span>
+    <span>arraste as bordas para ajustar · duplo-clique = reset</span>
   </div>
-  <div class="trilhas" id="trilhas"></div>
-  <div class="atalhos" id="atalhos"></div>
 </section>
 
-<!-- ---------- passo 3: entrega ---------- -->
-<section class="painel-entrega" id="painel-entrega">
-  <div class="entrega-grade">
-
-    <div class="coluna">
-      <h2 class="titulo-passo">Vídeo final</h2>
-
-      <div class="bloco">
-        <label>Vai sair assim</label>
-        <div class="resumo" id="resumo-entrega"></div>
-        <div id="alertas-entrega" class="alertas"></div>
-      </div>
-
-      <div class="bloco">
-        <label>Gerar</label>
-        <button id="btn-mp4" class="btn primario grande">Renderizar o MP4</button>
-        <button id="btn-premiere" class="btn">Sequência do Premiere + SRT</button>
-        <p class="ajuda">O MP4 sai com legenda, cor e efeitos queimados. A
-          sequência abre no Premiere apontando pro bruto, com as pontas soltas
-          pra você recuperar material.</p>
-      </div>
-
-      <div class="bloco">
-        <label>Arquivos na pasta</label>
-        <ul id="saidas" class="saida-lista"></ul>
-        <button class="btn mini-btn" id="btn-pasta2">Abrir a pasta</button>
-      </div>
+<section class="painel-capa" id="painel-capa">
+  <div class="capa-grade">
+    <div class="capa-preview">
+      <!-- prévia desenhada no navegador a partir do proxy: mostra o quadro na
+           hora, sem esperar o servidor. O arquivo final é gerado em alta. -->
+      <canvas id="capa-canvas"></canvas>
+      <img id="capa-img" alt="capa gerada">
+      <video id="capa-video" src="/midia/fonte" preload="auto" muted playsinline></video>
+      <div class="capa-selo" id="capa-selo">prévia</div>
     </div>
 
-    <div class="coluna">
-      <h2 class="titulo-passo">Capa</h2>
-      <div class="capa-grade">
-        <div class="capa-preview">
-          <!-- prévia desenhada no navegador a partir do proxy: mostra o quadro
-               na hora, sem esperar o servidor. O arquivo final é gerado em alta. -->
-          <canvas id="capa-canvas"></canvas>
-          <img id="capa-img" alt="capa gerada">
-          <video id="capa-video" src="/midia/fonte" preload="auto" muted playsinline></video>
-          <div class="capa-selo" id="capa-selo">prévia</div>
+    <div class="capa-controles">
+      <div class="secao">
+        <label>Instante do vídeo</label>
+        <div class="linha-radio">
+          <input type="range" id="capa-t" min="0" max="100" value="0" step="0.1" class="faixa">
+          <b id="capa-t-txt">0:00,0</b>
         </div>
+        <button class="btn mini-btn" id="capa-usar-player">usar o quadro atual do player</button>
+      </div>
 
-        <div class="capa-controles">
-          <div class="secao">
-            <label>Instante do vídeo</label>
-            <div class="linha-radio">
-              <input type="range" id="capa-t" min="0" max="100" value="0" step="0.1" class="faixa">
-              <b id="capa-t-txt">0:00,0</b>
-            </div>
-            <button class="btn mini-btn" id="capa-usar-player">usar o quadro atual do player</button>
-          </div>
+      <div class="secao">
+        <label>Texto da capa</label>
+        <textarea id="capa-texto" class="campo" rows="3"
+          placeholder="uma linha por linha — deixe vazio para capa limpa"></textarea>
+        <input id="capa-destaque" class="campo" type="text"
+          placeholder="palavra que ganha a cor de destaque (opcional)">
+      </div>
 
-          <div class="secao">
-            <label>Texto da capa</label>
-            <textarea id="capa-texto" class="campo" rows="3"
-              placeholder="uma linha por linha — deixe vazio para capa limpa"></textarea>
-            <input id="capa-destaque" class="campo" type="text"
-              placeholder="palavra que ganha a cor de destaque (opcional)">
-          </div>
-
-          <div class="secao">
-            <label>Estilo</label>
-            <div class="cards" id="capa-presets">
-              <button class="card sel" data-preset="impacto">
-                <span class="mini-capa mc-impacto"></span><span>Impacto</span></button>
-              <button class="card" data-preset="destaque">
-                <span class="mini-capa mc-destaque"></span><span>Destaque</span></button>
-              <button class="card" data-preset="faixa">
-                <span class="mini-capa mc-faixa"></span><span>Faixa</span></button>
-              <button class="card" data-preset="editorial">
-                <span class="mini-capa mc-editorial"></span><span>Editorial</span></button>
-              <button class="card" data-preset="limpo">
-                <span class="mini-capa mc-limpo"></span><span>Limpo</span></button>
-            </div>
-          </div>
-
-          <div class="secao">
-            <label>Formato</label>
-            <div class="cards" id="capa-formatos">
-              <button class="card sel" data-fmt="9:16"><span>9:16</span><span>story</span></button>
-              <button class="card" data-fmt="4:5"><span>4:5</span><span>feed</span></button>
-              <button class="card" data-fmt="1:1"><span>1:1</span><span>quadrado</span></button>
-            </div>
-          </div>
-
-          <div class="secao">
-            <label>Ajustes</label>
-            <div class="linha-radio">
-              <label class="mini"><input type="radio" name="capa-pos" value="base" checked> embaixo</label>
-              <label class="mini"><input type="radio" name="capa-pos" value="centro"> centro</label>
-              <label class="mini"><input type="radio" name="capa-pos" value="topo"> em cima</label>
-              <label class="mini"><input type="checkbox" id="capa-look"> colorização ili</label>
-            </div>
-            <div class="linha-radio">
-              <span class="mini">escurecer fundo</span>
-              <input type="range" id="capa-scrim" min="0" max="1" step="0.05" value="0.8" class="faixa">
-            </div>
-          </div>
-
-          <button id="btn-capa" class="btn primario">Gerar capa</button>
+      <div class="secao">
+        <label>Estilo da capa</label>
+        <div class="cards" id="capa-presets">
+          <button class="card sel" data-preset="impacto">
+            <span class="mini-capa mc-impacto"></span><span>Impacto</span></button>
+          <button class="card" data-preset="destaque">
+            <span class="mini-capa mc-destaque"></span><span>Destaque</span></button>
+          <button class="card" data-preset="faixa">
+            <span class="mini-capa mc-faixa"></span><span>Faixa</span></button>
+          <button class="card" data-preset="editorial">
+            <span class="mini-capa mc-editorial"></span><span>Editorial</span></button>
+          <button class="card" data-preset="limpo">
+            <span class="mini-capa mc-limpo"></span><span>Limpo</span></button>
         </div>
       </div>
-    </div>
 
+      <div class="secao">
+        <label>Formato</label>
+        <div class="cards" id="capa-formatos">
+          <button class="card sel" data-fmt="9:16"><span>9:16</span><span>story</span></button>
+          <button class="card" data-fmt="4:5"><span>4:5</span><span>feed</span></button>
+          <button class="card" data-fmt="1:1"><span>1:1</span><span>quadrado</span></button>
+        </div>
+      </div>
+
+      <div class="secao">
+        <label>Ajustes</label>
+        <div class="linha-radio">
+          <label class="mini"><input type="radio" name="capa-pos" value="base" checked> embaixo</label>
+          <label class="mini"><input type="radio" name="capa-pos" value="centro"> centro</label>
+          <label class="mini"><input type="radio" name="capa-pos" value="topo"> em cima</label>
+          <label class="mini"><input type="checkbox" id="capa-look"> colorização ili</label>
+        </div>
+        <div class="linha-radio">
+          <span class="mini">escurecer fundo</span>
+          <input type="range" id="capa-scrim" min="0" max="1" step="0.05" value="0.8" class="faixa">
+        </div>
+      </div>
+
+      <div class="secao">
+        <button id="btn-capa" class="btn primario">Gerar capa</button>
+        <button id="btn-capa-pasta" class="btn">Abrir pasta</button>
+      </div>
+    </div>
   </div>
 </section>
 

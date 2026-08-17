@@ -81,11 +81,6 @@ def _ts(t: float) -> str:
     return f"{h:d}:{m:02d}:{s:05.2f}"
 
 
-def palavras_na_saida(edl: dict) -> list[dict]:
-    """Publico: a timeline usa as MESMAS palavras reposicionadas que a legenda."""
-    return _palavras_na_saida(edl)
-
-
 def _palavras_na_saida(edl: dict) -> list[dict]:
     ativos = sorted([t for t in edl["takes"] if t.get("ativo", True)], key=lambda t: t["ini"])
     saida, deslocamento = [], 0.0
@@ -183,96 +178,57 @@ Style: hl_stacked,{HL_FONTE},{hl},{BRANCO},{CAIXA},{CAIXA},1,0,3,{max(6,round(14
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
+    # "nenhuma" ainda passa por aqui quando ha headline: gera o topo e pula as
+    # legendas, em vez de devolver arquivo vazio
+    modo = "nenhuma" if estilo == "nenhuma" else cfg["modo"]
     # A caixa da legenda e escolha de estilo, nao regra: minuscula pesa menos na
     # imagem e e o padrao da referencia na legenda palavra-a-palavra.
     caixa = (lambda s: s.upper()) if caixa_alta else (lambda s: s.lower())
     linhas = _eventos_headline(headline, headline_modo, dur_total, altura)
 
-    for b in blocos(edl, estilo):
-        if b["modo"] == "palavra":
-            # realce da palavra-a-palavra e da LINHA inteira, nao inline
-            est = "realce" if b["palavras"][0]["realce"] else "base"
-            linhas.append(_dialogo(b["ini"], b["fim"], est,
-                                   caixa(esc(b["palavras"][0]["t"]))))
-            continue
-        # inline: so a palavra que carrega a frase muda de cor, o resto fica
-        # branco. Trocar a cor de tudo tira o sentido do realce.
-        partes = []
-        for w in b["palavras"]:
-            t = caixa(esc(w["t"]))
-            partes.append(f"{{\\c{cfg['realce']}}}{t}{{\\c{cfg['cor']}}}"
-                          if w["realce"] else t)
-        linhas.append(_dialogo(b["ini"], b["fim"], "base", " ".join(partes)))
-
-    destino.write_text(cabecalho + "\n".join(linhas) + "\n", encoding="utf-8")
-    return destino
-
-
-def blocos(edl: dict, estilo: str = "ili-palavra") -> list[dict]:
-    """Os blocos de legenda que VAO pra tela, ja na timeline de saida.
-
-    Existe porque a timeline da interface precisa desenhar exatamente o que o
-    arquivo vai conter. Enquanto essa conta viveu so dentro do `gerar`, a
-    interface tinha que adivinhar o agrupamento — e adivinhar errado e como a
-    timeline vira decoracao: ela mostra um ritmo que o video nao tem.
-
-    Devolve, por bloco: `ini`/`fim` em segundos da saida, `modo`, e as
-    `palavras` com o texto CRU (sem caixa e sem escape do ASS — quem escreve o
-    arquivo aplica os dois) marcando qual leva o realce.
-    """
-    cfg = dict(ESTILOS.get(estilo) or ESTILOS["ili-palavra"])
-    # "nenhuma" ainda passa pelo `gerar` quando ha headline: gera o topo e pula
-    # as legendas, em vez de devolver arquivo vazio.
-    modo = "nenhuma" if estilo == "nenhuma" else cfg["modo"]
     if modo == "nenhuma":
-        return []
+        pass
 
-    palavras = _palavras_na_saida(edl)
-    saida: list[dict] = []
-
-    if modo == "palavra":
+    elif modo == "palavra":
         for i, w in enumerate(palavras):
             fim = w["fim"]
             if i + 1 < len(palavras):
                 # encosta na proxima pra legenda nao piscar entre palavras
                 fim = min(palavras[i + 1]["ini"], w["fim"] + 0.25)
             fim = max(fim, w["ini"] + 0.12)
-            saida.append({
-                "ini": w["ini"], "fim": fim, "modo": "palavra",
-                "palavras": [{"t": w["t"],
-                              "realce": bool(_vale_realce(w["t"]) and i % 4 == 0)}],
-            })
+            est = "realce" if (_vale_realce(w["t"]) and i % 4 == 0) else "base"
+            linhas.append(_dialogo(w["ini"], fim, est, caixa(esc(w["t"]))))
 
     elif modo == "frase":
         for grupo in _agrupar(palavras, cfg.get("por_bloco", 3)):
             ini = grupo[0]["ini"]
             fim = max(grupo[-1]["fim"] + 0.08, ini + 0.3)
+            # inline: so a palavra que carrega a frase muda de cor, o resto
+            # fica branco. Trocar a cor de tudo tira o sentido do realce.
             alvo = _melhor_realce(grupo)
-            saida.append({
-                "ini": ini, "fim": fim, "modo": "frase",
-                "palavras": [{"t": w["t"], "realce": w is alvo} for w in grupo],
-            })
+            partes = []
+            for w in grupo:
+                t = caixa(esc(w["t"]))
+                partes.append(f"{{\\c{cfg['realce']}}}{t}{{\\c{cfg['cor']}}}"
+                              if w is alvo else t)
+            linhas.append(_dialogo(ini, fim, "base", " ".join(partes)))
 
     else:  # bloco corrido
         bloco: list[dict] = []
-
-        def fechar(bl: list[dict]) -> None:
-            saida.append({
-                "ini": bl[0]["ini"], "fim": bl[-1]["fim"] + 0.15, "modo": "bloco",
-                "palavras": [{"t": w["t"], "realce": False} for w in bl],
-            })
-
         for w in palavras:
             bloco.append(w)
             largo = len(" ".join(x["t"] for x in bloco)) > 34
             longo = bloco[-1]["fim"] - bloco[0]["ini"] > 3.0
             if largo or longo:
-                fechar(bloco)
+                linhas.append(_dialogo(bloco[0]["ini"], bloco[-1]["fim"] + 0.15, "base",
+                                       " ".join(caixa(esc(w["t"])) for w in bloco)))
                 bloco = []
         if bloco:
-            fechar(bloco)
+            linhas.append(_dialogo(bloco[0]["ini"], bloco[-1]["fim"] + 0.15, "base",
+                                   " ".join(caixa(esc(w["t"])) for w in bloco)))
 
-    return saida
+    destino.write_text(cabecalho + "\n".join(linhas) + "\n", encoding="utf-8")
+    return destino
 
 
 def _dialogo(ini: float, fim: float, estilo: str, texto: str) -> str:

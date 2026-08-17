@@ -165,15 +165,25 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(carregar_edl())
 
         if rota == "/api/recursos":
-            return self._json(recursos())
-
-        if rota == "/api/plano":
-            # A timeline desenha ISTO. Vem do mesmo codigo que o render usa,
-            # entao nao existe mais "o que a tela mostra" separado de "o que o
-            # arquivo tem" — ver pipeline/plano.py.
-            from pipeline import plano
-            edl = carregar_edl()
-            return self._json(plano.montar(edl, edl.get("estilo") or {}, recursos()))
+            enc = achar_encerramento()
+            final = EDIT / "final.mp4"
+            # "desatualizado" = o EDL mudou depois do último render. Sem isso a
+            # Fase 2 mostraria um arquivo velho como se fosse o resultado atual.
+            info_final = {}
+            if final.exists():
+                info_final = {
+                    "existe": True,
+                    "quando": final.stat().st_mtime,
+                    "desatualizado": final.stat().st_mtime < EDL.stat().st_mtime,
+                    "url": f"/saida/final.mp4?v={final.stat().st_mtime_ns}",
+                }
+            return self._json({
+                "luts": [p.stem for p in achar_luts()],
+                "encerramento": enc.name if enc else "",
+                "trilha": bool(achar_trilha()),
+                "referencias": len(achar_referencias()),
+                "final": info_final,
+            })
 
 
         if rota == "/midia/fonte":
@@ -233,18 +243,29 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": True})
 
         if rota == "/api/exportar":
-            # O render le o estilo SALVO, nao o que veio no corpo do pedido.
-            # Enquanto a UI mandava os parametros por fora, dava pra renderizar
-            # com um estilo que a tela ja nao mostrava mais — a terceira
-            # realidade que a timeline nao tinha como denunciar. Agora ha um
-            # caminho so: a interface salva, depois pede o render.
             formatos = dados.get("formatos") or ["xml", "srt"]
             try:
-                gerados = exportar(formatos, carregar_edl().get("estilo") or {})
+                gerados = exportar(
+                    formatos,
+                    dados.get("legenda") or "nenhuma",
+                    dados.get("look") or "nenhum",
+                    dados.get("headline") or "",
+                    dados.get("headline_modo") or "outline",
+                    bool(dados.get("zoom")),
+                    dados.get("cor") or "",
+                    dados.get("tipo") or "limpa",
+                    bool(dados.get("trilha")),
+                    bool(dados.get("zoom_animado")),
+                    bool(dados.get("flash")),
+                    bool(dados.get("broll")),
+                    bool(dados.get("caixa_alta")),
+                    dados.get("lut") or "",
+                    bool(dados.get("encerramento")),
+                    float(dados.get("altura_legenda") or 0.20),
+                )
             except Exception as e:  # devolve o erro pra UI em vez de morrer calado
                 return self._json({"erro": str(e)}, 500)
-            return self._json({"ok": True, "arquivos": gerados,
-                               "recursos": recursos()})
+            return self._json({"ok": True, "arquivos": gerados})
 
         if rota == "/api/abrir-pasta":
             subprocess.Popen(["explorer", str(EDIT)])
@@ -451,54 +472,6 @@ def achar_encerramento() -> Path | None:
     return None
 
 
-# O que sai do projeto, na ordem em que interessa a quem entrega. `legenda.ass`
-# fica de fora de proposito: e insumo do render, nao entregavel.
-ENTREGAVEIS = [
-    ("final.mp4", "vídeo pronto, com legenda e cor"),
-    ("capa.jpg", "capa para o post"),
-    ("sequencia.xml", "sequência para o Premiere"),
-    ("master.srt", "legenda nos tempos do corte"),
-]
-
-
-def recursos() -> dict:
-    """O que a PASTA tem de verdade — e o que ja foi entregue.
-
-    A lista de saidas vinha da memoria da aba aberta: quem recarregava a pagina
-    via "nada gerado ainda" com quatro arquivos prontos em disco. Agora ela le
-    o diretorio, e cada arquivo carrega se ainda esta em dia com o corte.
-    """
-    enc = achar_encerramento()
-    mudou_em = EDL.stat().st_mtime
-
-    saidas = []
-    for nome, oque in ENTREGAVEIS:
-        p = EDIT / nome
-        if not p.exists():
-            continue
-        st = p.stat()
-        saidas.append({
-            "arquivo": nome, "oque": oque,
-            "quando": st.st_mtime, "bytes": st.st_size,
-            # o corte mudou depois deste arquivo: ele ainda existe, mas ja nao
-            # representa o projeto — dizer isso e o minimo pra nao entregar velho
-            "desatualizado": st.st_mtime < mudou_em,
-            "url": f"/saida/{nome}?v={st.st_mtime_ns}",
-        })
-
-    final = next((s for s in saidas if s["arquivo"] == "final.mp4"), None)
-    return {
-        "luts": [p.stem for p in achar_luts()],
-        "encerramento": enc.name if enc else "",
-        "trilha": (t.name if (t := achar_trilha()) else ""),
-        "referencias": [p.name for p in achar_referencias()],
-        "saidas": saidas,
-        "final": ({"existe": True, "quando": final["quando"],
-                   "desatualizado": final["desatualizado"], "url": final["url"]}
-                  if final else {}),
-    }
-
-
 def achar_referencias() -> list[Path]:
     """Imagens de apoio pra outra metade da tela dividida.
 
@@ -512,38 +485,20 @@ def achar_referencias() -> list[Path]:
     return achados
 
 
-def exportar(formatos: list[str], estilo: dict) -> list[str]:
-    """Gera os formatos pedidos a partir do estilo JA SALVO no edl.json.
-
-    Um argumento so — o estilo — em vez de quinze parametros soltos. Cada
-    parametro solto era uma chance de a chamada divergir do que a tela mostrava.
-    """
+def exportar(formatos: list[str], legenda: str = "nenhuma", look: str = "nenhum",
+             headline: str = "", headline_modo: str = "outline",
+             zoom: bool = False, cor: str = "", tipo: str = "limpa",
+             trilha: bool = False, zoom_animado: bool = False,
+             flash: bool = False, broll: bool = False,
+             caixa_alta: bool = False, lut: str = "",
+             encerramento: bool = False,
+             altura_legenda: float = 0.20) -> list[str]:
     sys.path.insert(0, str(RAIZ))
     from pipeline import export_ass, export_srt, export_xml, render
 
     edl = carregar_edl()
     info = edl.get("info", {})
     gerados = []
-
-    estilo = estilo or {}
-    legenda = estilo.get("legenda") or "nenhuma"
-    look = "ili" if estilo.get("cor_look") else "nenhum"
-    headline = estilo.get("headline") or ""
-    headline_modo = "stacked" if estilo.get("headline_estilo") == "caixa" else "outline"
-    # "nenhuma" e uma escolha valida de headline: nao adianta o texto existir
-    if estilo.get("headline_estilo") == "nenhuma":
-        headline = ""
-    zoom = bool(estilo.get("zoom"))
-    cor = estilo.get("cor") or ""
-    tipo = estilo.get("tipo") or "limpa"
-    trilha = bool(estilo.get("trilha"))
-    zoom_animado = bool(estilo.get("zoom_animado"))
-    flash = bool(estilo.get("flash"))
-    broll = bool(estilo.get("broll"))
-    caixa_alta = estilo.get("caixa") == "maiuscula"
-    lut = estilo.get("lut") or ""
-    encerramento = bool(estilo.get("encerramento"))
-    altura_legenda = float(estilo.get("altura_legenda") or 0.20)
 
     if "xml" in formatos:
         alvo = EDIT / "sequencia.xml"
