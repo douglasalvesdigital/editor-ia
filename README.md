@@ -9,9 +9,21 @@ A máquina faz a decupagem chata. Você dá a palavra final.
 ## Requisitos
 
 - `ffmpeg` e `ffprobe` no PATH
-- Python 3.10+ com `faster-whisper` e `numpy`
+- Python 3.10+ com `faster-whisper`, `numpy` e `Pillow`
 
-Nada mais. O servidor da interface usa só a biblioteca padrão.
+```bash
+pip install faster-whisper numpy Pillow
+```
+
+O servidor da interface usa só a biblioteca padrão — as três dependências são
+do pipeline: `faster-whisper` transcreve, `numpy` mede o áudio e `Pillow`
+desenha a capa.
+
+**Fontes.** A capa e a legenda pedem *Funnel Display* e *Trirong*. O
+`pipeline/thumb.py` procura em `C:/Windows/Fonts` (caminho fixo) e, se não
+achar, cai em `load_default()` **sem erro nenhum** — a capa sai com a
+tipografia errada e nada na tela explica. Fora do Windows, ajuste `SISTEMA` no
+`thumb.py`.
 
 ## Uso
 
