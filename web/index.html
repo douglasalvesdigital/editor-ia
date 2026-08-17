@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ili · editor</title>
+<link rel="stylesheet" href="/web/style.css">
+</head>
+<body data-passo="corte">
+
+<header class="topo">
+  <div class="ident">
+    <div class="marca">ili</div>
+    <div class="titulos">
+      <h1 id="nome-projeto">carregando…</h1>
+      <p id="status-corte">lendo o projeto…</p>
+    </div>
+  </div>
+  <div class="acoes">
+    <span id="estado-salvo" class="estado-salvo"></span>
+    <button id="btn-desfazer" class="btn" disabled title="nada para desfazer">↶ Desfazer</button>
+    <button id="btn-abrir" class="btn">Abrir vídeo</button>
+    <button id="btn-pasta" class="btn">Abrir pasta</button>
+  </div>
+</header>
+
+<!-- Três passos, na ordem em que o trabalho acontece. Antes eram quatro abas
+     soltas ("Corte", "Estilo", "Visual", "Capa") em que duas eram fases
+     numeradas e duas não, e nada dizia por onde começar. -->
+<nav class="passos">
+  <button class="passo" data-passo="corte">
+    <b>1</b><span>Corte<small id="rot-corte">o que fica no vídeo</small></span>
+  </button>
+  <i class="seta">→</i>
+  <button class="passo" data-passo="edicao">
+    <b>2</b><span>Edição<small id="rot-edicao">como o vídeo fica</small></span>
+  </button>
+  <i class="seta">→</i>
+  <button class="passo" data-passo="entrega">
+    <b>3</b><span>Entrega<small id="rot-entrega">gerar os arquivos</small></span>
+  </button>
+  <div class="passo-acao">
+    <button id="btn-avancar" class="btn primario">Ir para a Edição →</button>
+  </div>
+</nav>
+
+<main>
+  <section class="palco">
+    <div class="player-wrap">
+      <video id="player" preload="auto" playsinline></video>
+      <div id="headline-preview" class="headline-prev"></div>
+      <div id="legenda-preview" class="legenda"></div>
+      <div id="selo-player" class="selo-player">prévia do corte</div>
+    </div>
+
+    <div class="controles">
+      <button id="btn-inicio" class="btn-icone" title="voltar ao início">⏮</button>
+      <button id="btn-play" class="btn-icone grande" title="espaço">▶</button>
+      <div class="relogio">
+        <b id="t-atual">0:00,00</b><span>/</span><span id="t-final">0:00,00</span>
+      </div>
+      <label class="alternar" id="cx-pular">
+        <input type="checkbox" id="pular-cortes" checked>
+        <span>pular o que foi cortado</span>
+      </label>
+      <!-- O que está no player deixou de ser um par de radios perdido na
+           lateral: é o modo do próprio preview, ao lado dele. -->
+      <div class="segmento" id="fonte-player">
+        <button data-fonte="previa" class="sel">prévia</button>
+        <button data-fonte="final" disabled title="ainda não renderizado">arquivo final</button>
+      </div>
+      <span id="aviso-final" class="aviso-inline"></span>
+    </div>
+  </section>
+
+  <!-- ---------- lateral do passo 1: os takes ---------- -->
+  <aside class="lateral lat-corte">
+    <h2>Takes</h2>
+    <p class="ajuda">Clique para ir. Desmarque para tirar do corte.</p>
+    <ol id="lista-takes" class="lista-takes"></ol>
+  </aside>
+
+  <!-- ---------- lateral do passo 2: o inspetor ---------- -->
+  <aside class="lateral lat-edicao">
+    <div class="inspetor-topo">
+      <h2 id="insp-titulo">Projeto</h2>
+      <p class="ajuda" id="insp-sub">clique numa pista ou num clipe da timeline</p>
+    </div>
+    <div id="inspetor"></div>
+  </aside>
+</main>
+
+<!-- ---------- timeline ---------- -->
+<section class="timeline-bloco">
+  <div class="tl-cabeca">
+    <span class="tl-base" id="tl-base">timeline do bruto</span>
+    <span class="tl-dica" id="tl-dica"></span>
+  </div>
+  <div class="regua-linha">
+    <div class="regua-rotulo"></div>
+    <div class="regua" id="regua"></div>
+  </div>
+  <div class="trilhas" id="trilhas"></div>
+  <div class="atalhos" id="atalhos"></div>
+</section>
+
+<!-- ---------- passo 3: entrega ---------- -->
+<section class="painel-entrega" id="painel-entrega">
+  <div class="entrega-grade">
+
+    <div class="coluna">
+      <h2 class="titulo-passo">Vídeo final</h2>
+
+      <div class="bloco">
+        <label>Vai sair assim</label>
+        <div class="resumo" id="resumo-entrega"></div>
+        <div id="alertas-entrega" class="alertas"></div>
+      </div>
+
+      <div class="bloco">
+        <label>Gerar</label>
+        <button id="btn-mp4" class="btn primario grande">Renderizar o MP4</button>
+        <button id="btn-premiere" class="btn">Sequência do Premiere + SRT</button>
+        <p class="ajuda">O MP4 sai com legenda, cor e efeitos queimados. A
+          sequência abre no Premiere apontando pro bruto, com as pontas soltas
+          pra você recuperar material.</p>
+      </div>
+
+      <div class="bloco">
+        <label>Arquivos na pasta</label>
+        <ul id="saidas" class="saida-lista"></ul>
+        <button class="btn mini-btn" id="btn-pasta2">Abrir a pasta</button>
+      </div>
+    </div>
+
+    <div class="coluna">
+      <h2 class="titulo-passo">Capa</h2>
+      <div class="capa-grade">
+        <div class="capa-preview">
+          <!-- prévia desenhada no navegador a partir do proxy: mostra o quadro
+               na hora, sem esperar o servidor. O arquivo final é gerado em alta. -->
+          <canvas id="capa-canvas"></canvas>
+          <img id="capa-img" alt="capa gerada">
+          <video id="capa-video" src="/midia/fonte" preload="auto" muted playsinline></video>
+          <div class="capa-selo" id="capa-selo">prévia</div>
+        </div>
+
+        <div class="capa-controles">
+          <div class="secao">
+            <label>Instante do vídeo</label>
+            <div class="linha-radio">
+              <input type="range" id="capa-t" min="0" max="100" value="0" step="0.1" class="faixa">
+              <b id="capa-t-txt">0:00,0</b>
+            </div>
+            <button class="btn mini-btn" id="capa-usar-player">usar o quadro atual do player</button>
+          </div>
+
+          <div class="secao">
+            <label>Texto da capa</label>
+            <textarea id="capa-texto" class="campo" rows="3"
+              placeholder="uma linha por linha — deixe vazio para capa limpa"></textarea>
+            <input id="capa-destaque" class="campo" type="text"
+              placeholder="palavra que ganha a cor de destaque (opcional)">
+          </div>
+
+          <div class="secao">
+            <label>Estilo</label>
+            <div class="cards" id="capa-presets">
+              <button class="card sel" data-preset="impacto">
+                <span class="mini-capa mc-impacto"></span><span>Impacto</span></button>
+              <button class="card" data-preset="destaque">
+                <span class="mini-capa mc-destaque"></span><span>Destaque</span></button>
+              <button class="card" data-preset="faixa">
+                <span class="mini-capa mc-faixa"></span><span>Faixa</span></button>
+              <button class="card" data-preset="editorial">
+                <span class="mini-capa mc-editorial"></span><span>Editorial</span></button>
+              <button class="card" data-preset="limpo">
+                <span class="mini-capa mc-limpo"></span><span>Limpo</span></button>
+            </div>
+          </div>
+
+          <div class="secao">
+            <label>Formato</label>
+            <div class="cards" id="capa-formatos">
+              <button class="card sel" data-fmt="9:16"><span>9:16</span><span>story</span></button>
+              <button class="card" data-fmt="4:5"><span>4:5</span><span>feed</span></button>
+              <button class="card" data-fmt="1:1"><span>1:1</span><span>quadrado</span></button>
+            </div>
+          </div>
+
+          <div class="secao">
+            <label>Ajustes</label>
+            <div class="linha-radio">
+              <label class="mini"><input type="radio" name="capa-pos" value="base" checked> embaixo</label>
+              <label class="mini"><input type="radio" name="capa-pos" value="centro"> centro</label>
+              <label class="mini"><input type="radio" name="capa-pos" value="topo"> em cima</label>
+              <label class="mini"><input type="checkbox" id="capa-look"> colorização ili</label>
+            </div>
+            <div class="linha-radio">
+              <span class="mini">escurecer fundo</span>
+              <input type="range" id="capa-scrim" min="0" max="1" step="0.05" value="0.8" class="faixa">
+            </div>
+          </div>
+
+          <button id="btn-capa" class="btn primario">Gerar capa</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div id="abrir" class="modal">
+  <div class="caixa-modal">
+    <h2>Abrir vídeo</h2>
+    <p class="ajuda">Escolha um bruto. Se ainda não tiver sido preparado, eu
+      transcrevo e proponho o corte — leva cerca de 1 min por minuto de vídeo.</p>
+    <button id="btn-procurar" class="btn primario">Procurar no computador…</button>
+    <p class="ajuda">ou cole o caminho:</p>
+    <input id="caminho" class="campo" type="text" spellcheck="false"
+      placeholder="G:\pasta\bruto.mp4  (ou uma pasta com vídeos)">
+    <div id="abrir-erro" class="erro-modal"></div>
+    <div class="acoes-modal">
+      <button id="abrir-cancelar" class="btn">Cancelar</button>
+      <button id="abrir-ok" class="btn primario">Abrir</button>
+    </div>
+  </div>
+</div>
+
+<div id="trabalhando" class="trabalhando">
+  <div id="trabalhando-txt">renderizando…</div>
+  <div class="barra"><i></i></div>
+</div>
+
+<div id="aviso" class="aviso"></div>
+
+<script src="/web/app.js"></script>
+</body>
+</html>

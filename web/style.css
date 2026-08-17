@@ -1,0 +1,441 @@
+/* Identidade ili: fundo #121212, gradiente rosa->laranja, Funnel Display nas
+   linhas de apoio e Trirong Bold Italic na palavra de ênfase. */
+:root{
+  --fundo:#121212; --painel:#181818; --painel2:#202020; --painel3:#282828;
+  --borda:#2e2e2e; --borda2:#3a3a3a;
+  --texto:#f2f2f2; --fraco:#8a8a8a; --fraco2:#666;
+  --rosa:#D23089; --laranja:#EE8656;
+  --grad:linear-gradient(100deg,#D23089,#EE8656);
+  --perigo:#ff5c5c; --ok:#5fd39b; --atencao:#ffc46b;
+  --alt-topo:58px; --alt-passos:56px;
+  --rot:82px;              /* coluna de rótulos da timeline */
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{
+  background:var(--fundo); color:var(--texto);
+  font:14px/1.45 "Funnel Display","Segoe UI",system-ui,sans-serif;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+em,.enfase{font-family:"Trirong",Georgia,serif; font-style:italic; font-weight:700}
+code{font:11px ui-monospace,Consolas,monospace; background:var(--painel2);
+  padding:1px 5px; border-radius:4px; color:var(--laranja)}
+
+/* ---------- topo ---------- */
+.topo{
+  height:var(--alt-topo); flex:none; display:flex; align-items:center;
+  justify-content:space-between; gap:16px; padding:0 18px;
+  background:var(--painel); border-bottom:1px solid var(--borda);
+}
+.ident{display:flex; align-items:center; gap:14px; min-width:0}
+.marca{font-weight:700; font-size:17px; letter-spacing:-.5px; padding:6px 12px;
+  border-radius:9px; background:var(--grad); color:#fff}
+.titulos{min-width:0}
+.titulos h1{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.titulos p{font-size:12px; color:var(--fraco); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.acoes{display:flex; gap:8px; flex:none; align-items:center}
+.estado-salvo{font-size:11px; color:var(--fraco); min-width:56px; text-align:right;
+  opacity:0; transition:opacity .2s}
+.estado-salvo.salvando,.estado-salvo.salvo,.estado-salvo.erro{opacity:1}
+.estado-salvo.salvo{color:var(--ok)}
+.estado-salvo.erro{color:var(--perigo)}
+
+.btn{
+  background:var(--painel2); color:var(--texto); border:1px solid var(--borda);
+  padding:9px 15px; border-radius:9px; font:inherit; font-size:13px;
+  font-weight:600; cursor:pointer;
+}
+.btn:hover{background:var(--painel3); border-color:var(--borda2)}
+.btn.primario{background:var(--grad); color:#fff; border-color:transparent}
+.btn.primario:hover{filter:brightness(1.1)}
+.btn.grande{padding:12px 18px; font-size:14px}
+.btn.largo{width:100%; margin-top:2px}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.mini-btn{padding:6px 11px; font-size:11px; font-weight:600}
+
+/* ---------- os três passos ----------
+   Numerados e ligados por seta: a ordem do trabalho fica na forma, não numa
+   dica de texto. Antes eram quatro abas em que duas se chamavam "FASE". */
+.passos{
+  height:var(--alt-passos); flex:none; display:flex; align-items:center; gap:4px;
+  padding:0 18px; background:var(--painel); border-bottom:1px solid var(--borda);
+}
+.passo{
+  display:flex; align-items:center; gap:10px; background:transparent;
+  border:1px solid transparent; color:var(--fraco); padding:6px 14px 6px 10px;
+  border-radius:10px; cursor:pointer; font:inherit; text-align:left;
+}
+.passo b{
+  flex:none; width:22px; height:22px; border-radius:50%; display:grid;
+  place-items:center; font-size:11px; background:var(--painel3);
+  color:var(--fraco); border:1px solid var(--borda);
+}
+.passo span{display:flex; flex-direction:column; line-height:1.25}
+.passo span{font-size:13px; font-weight:600}
+.passo small{font-size:10.5px; font-weight:400; color:var(--fraco2);
+  white-space:nowrap; max-width:230px; overflow:hidden; text-overflow:ellipsis}
+.passo:hover{background:var(--painel2); color:var(--texto)}
+.passo.ativo{background:var(--painel2); border-color:var(--borda); color:var(--texto)}
+.passo.ativo b{background:var(--grad); color:#fff; border-color:transparent}
+.passo.ativo small{color:var(--fraco)}
+.seta{color:#3a3a3a; font-style:normal; font-size:13px}
+.passo-acao{margin-left:auto}
+
+/* ---------- corpo ---------- */
+main{flex:1; display:flex; min-height:0; overflow:hidden}
+body[data-passo="entrega"] main,
+body[data-passo="entrega"] .timeline-bloco{display:none}
+
+.palco{
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:10px; padding:14px 16px; min-width:0;
+}
+.player-wrap{position:relative; height:100%; min-height:0; display:flex;
+  align-items:center; justify-content:center}
+video{max-height:100%; max-width:100%; border-radius:14px; background:#000;
+  box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.selo-player{
+  position:absolute; top:10px; left:10px; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; padding:3px 9px; border-radius:20px;
+  background:rgba(0,0,0,.62); color:var(--fraco); pointer-events:none;
+}
+body[data-fonte="final"] .selo-player{background:var(--grad); color:#fff}
+
+/* prévia da legenda e da headline sobre o player */
+.legenda{
+  /* A caixa é decidida no JS, a partir do estilo escolhido. Um
+     `text-transform:uppercase` aqui fazia a prévia mostrar MAIÚSCULA enquanto
+     o arquivo saía minúsculo — a prévia mentindo é pior que não ter prévia. */
+  position:absolute; left:0; right:0; bottom:var(--altura-legenda,20%);
+  text-align:center; padding:0 7%; font-weight:600;
+  font-size:clamp(15px,2.4vh,28px); line-height:1.2;
+  text-shadow:0 2px 12px rgba(0,0,0,.95); pointer-events:none;
+}
+.legenda.leg-palavra{font-size:clamp(20px,3.8vh,46px); font-weight:700; letter-spacing:-.5px}
+.legenda.leg-palavra b{color:var(--realce,#EE8656); font-weight:700}
+.legenda.leg-frase b{color:var(--realce,#EE8656); font-weight:700}
+.legenda.leg-bloco{font-size:clamp(12px,1.9vh,20px); line-height:1.3}
+body[data-fonte="final"] .legenda,
+body[data-fonte="final"] .headline-prev{display:none}
+
+.headline-prev{display:none; position:absolute; left:0; right:0; top:6%;
+  text-align:center; padding:0 7%; pointer-events:none;
+  font-weight:800; font-size:clamp(13px,2vh,24px); line-height:1.15;
+  letter-spacing:.5px; text-transform:uppercase;
+}
+.headline-prev.on{display:block}
+.headline-prev span{display:block}
+.headline-prev.hl-contorno span{color:#fff; text-shadow:0 0 4px #000,0 0 4px #000,0 0 6px #000}
+.headline-prev.hl-caixa span{background:rgba(32,32,32,.92); color:#fff;
+  display:inline-block; padding:3px 10px; border-radius:5px; margin-bottom:2px}
+.headline-prev.hl-nenhuma{display:none}
+
+.controles{flex:none; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  justify-content:center}
+.btn-icone{width:34px; height:34px; border-radius:50%; border:1px solid var(--borda);
+  background:var(--painel2); color:var(--texto); cursor:pointer; font-size:12px}
+.btn-icone.grande{width:42px; height:42px; font-size:14px}
+.btn-icone:hover{background:var(--painel3)}
+.alternar{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--fraco); cursor:pointer}
+.alternar input{accent-color:var(--rosa)}
+.alternar.escondido{display:none}
+.relogio{font-variant-numeric:tabular-nums; font-size:13px; color:var(--fraco); display:flex; gap:6px}
+.relogio b{color:var(--texto)}
+
+/* segmentado: prévia | arquivo final. É o modo do preview, e por isso mora
+   junto do preview — não num par de radios na lateral. */
+.segmento{display:flex; background:var(--painel2); border:1px solid var(--borda);
+  border-radius:9px; padding:2px; gap:2px}
+.segmento button{background:transparent; border:0; color:var(--fraco); cursor:pointer;
+  font:inherit; font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:7px}
+.segmento button:hover:not(:disabled){color:var(--texto)}
+.segmento button.sel{background:var(--painel3); color:var(--texto)}
+.segmento button:disabled{opacity:.4; cursor:not-allowed}
+
+.aviso-inline{font-size:11px; color:var(--fraco)}
+.aviso-inline.ok{color:var(--ok)}
+.aviso-inline.alerta{color:var(--atencao)}
+.alerta-inline{color:var(--atencao)}
+
+/* ---------- lateral ---------- */
+.lateral{width:312px; flex:none; background:var(--painel); border-left:1px solid var(--borda);
+  padding:15px; overflow-y:auto}
+.lat-corte{display:none} body[data-passo="corte"] .lat-corte{display:block}
+.lat-edicao{display:none} body[data-passo="edicao"] .lat-edicao{display:block}
+.lateral h2{font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--fraco)}
+.ajuda{font-size:11px; color:var(--fraco); margin:5px 0 11px; line-height:1.5}
+
+.lista-takes{list-style:none; display:flex; flex-direction:column; gap:6px}
+.item-take{display:flex; gap:9px; align-items:flex-start; padding:9px 10px; border-radius:9px;
+  background:var(--painel2); border:1px solid transparent; cursor:pointer; font-size:12px;
+  position:relative}
+.item-take:hover{border-color:var(--borda)}
+.item-take.atual{border-color:var(--rosa)}
+.item-take.off{opacity:.42}
+.item-take.off .txt{text-decoration:line-through}
+.item-take input{margin-top:2px; accent-color:var(--rosa); cursor:pointer}
+.item-take .meta{display:block; color:var(--fraco); font-size:10px; margin-top:3px;
+  font-variant-numeric:tabular-nums}
+/* take que é continuação da fala de cima: recuado, com um fio ligando os dois,
+   pra ler como "mesma frase" e não como take independente */
+.item-take.emenda{margin-left:16px}
+.item-take.emenda::before{content:""; position:absolute; left:-11px; top:-7px; bottom:50%;
+  width:9px; border-left:1.5px solid var(--borda); border-bottom:1.5px solid var(--borda);
+  border-bottom-left-radius:6px}
+.acoes-take{margin-left:auto; display:flex; gap:4px; align-self:center; opacity:0; transition:.12s}
+.item-take:hover .acoes-take,.item-take.atual .acoes-take{opacity:1}
+.btn-take{background:var(--painel); border:1px solid var(--borda); color:var(--fraco);
+  border-radius:6px; padding:3px 8px; font:inherit; font-size:10px; cursor:pointer}
+.btn-take:hover{color:var(--texto); border-color:var(--borda2)}
+.btn-take.perigo:hover{color:#ff9d9d; border-color:#5a2b2b}
+.item-take .motivo{display:inline-block; margin-top:5px; padding:2px 7px; border-radius:5px;
+  font-size:10px; background:rgba(255,92,92,.13); color:#ff9d9d}
+.item-take .motivo.bom{background:rgba(95,211,155,.13); color:#7fe0b4}
+.item-take.manual-item .meta::after{content:" · criado à mão"; color:var(--laranja)}
+
+/* ---------- inspetor ---------- */
+.inspetor-topo{padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid var(--borda)}
+.inspetor-topo h2{font-size:13px; letter-spacing:.4px; text-transform:none; color:var(--texto)}
+.inspetor-topo .ajuda{margin:4px 0 0}
+.insp-grupo{display:flex; flex-direction:column; gap:8px; margin-bottom:18px}
+.insp-grupo > label{font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase; color:var(--fraco)}
+.insp-grupo > label:empty{display:none}
+
+.ops{display:flex; gap:6px; flex-wrap:wrap}
+.ops.empilhado{flex-direction:column}
+.op{flex:1 1 auto; min-width:88px; background:var(--painel2); border:1.5px solid var(--borda);
+  border-radius:9px; padding:8px 10px; cursor:pointer; font:inherit; color:var(--texto);
+  text-align:left; display:flex; flex-direction:column; gap:2px}
+.op:hover{border-color:var(--borda2)}
+.op.sel{border-color:var(--laranja); background:rgba(238,134,86,.08)}
+.op b{font-size:12px; font-weight:600}
+.op small{font-size:10px; color:var(--fraco); line-height:1.35}
+
+.tg{display:flex; gap:9px; align-items:flex-start; padding:9px 11px; border-radius:9px;
+  background:var(--painel2); border:1px solid transparent; cursor:pointer; font-size:12px}
+.tg:hover{border-color:var(--borda)}
+.tg input{accent-color:var(--rosa); margin-top:2px}
+.tg b{font-size:12px; font-weight:600; display:block}
+.tg small{display:block; color:var(--fraco); font-size:10px; margin-top:2px; line-height:1.4}
+.tg.desligado{opacity:.5; cursor:not-allowed}
+.tg.com-alerta{border-color:rgba(255,196,107,.4)}
+.mini-alerta{display:inline-block; margin-top:5px; font-style:normal; font-size:10px;
+  padding:2px 7px; border-radius:5px; background:rgba(255,196,107,.14); color:var(--atencao)}
+
+.clipe-info{background:var(--painel2); border-left:3px solid var(--laranja);
+  border-radius:0 8px 8px 0; padding:9px 11px}
+.clipe-info p{font-size:12px; line-height:1.4}
+.clipe-info span{display:block; margin-top:5px; font-size:10px; color:var(--fraco);
+  font-variant-numeric:tabular-nums}
+.lista-arq{list-style:none; display:flex; flex-direction:column; gap:4px}
+.lista-arq li{font-size:11px; color:var(--fraco); background:var(--painel2);
+  padding:5px 9px; border-radius:6px}
+
+.campo{width:100%; background:var(--painel2); border:1px solid var(--borda); color:var(--texto);
+  border-radius:9px; padding:9px 10px; font:inherit; font-size:12px; resize:vertical}
+.campo:focus{outline:none; border-color:var(--rosa)}
+.campo-sel{padding:8px 9px; cursor:pointer}
+.campo-hex{width:100px; font-variant-numeric:tabular-nums; text-transform:uppercase}
+.linha-cor{display:flex; align-items:center; gap:8px}
+input[type=color]{width:42px; height:36px; padding:0; border:1px solid var(--borda);
+  border-radius:9px; background:var(--painel2); cursor:pointer}
+.swatches{display:flex; gap:7px; flex-wrap:wrap}
+.sw{width:26px; height:26px; border-radius:50%; border:2px solid transparent;
+  background:var(--c); cursor:pointer}
+.sw:hover{border-color:#555}
+.sw.sel{border-color:#fff}
+.linha-radio{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.mini{display:flex; align-items:center; gap:5px; font-size:11px; color:var(--fraco); cursor:pointer}
+.mini input{accent-color:var(--rosa)}
+.faixa{flex:1; accent-color:var(--rosa); min-width:110px}
+
+/* ================= timeline ================= */
+.timeline-bloco{flex:none; background:var(--painel); border-top:1px solid var(--borda);
+  padding:8px 18px 10px; user-select:none}
+.tl-cabeca{display:flex; align-items:baseline; gap:12px; margin-bottom:5px}
+.tl-base{font-size:11px; font-weight:600; color:var(--texto); letter-spacing:.3px}
+.tl-dica{font-size:10.5px; color:var(--fraco2)}
+
+.regua-linha{display:flex}
+.regua-rotulo{width:var(--rot); flex:none}
+.regua{position:relative; flex:1; height:15px; color:var(--fraco); font-size:10px}
+.regua span{position:absolute; transform:translateX(-50%); font-variant-numeric:tabular-nums}
+.regua span::after{content:""; position:absolute; left:50%; top:12px; width:1px; height:4px;
+  background:var(--borda)}
+
+.trilhas{position:relative; display:flex; flex-direction:column; gap:3px}
+.linha-pista{display:flex; align-items:stretch; height:var(--alt)}
+.rot-pista{width:var(--rot); flex:none; background:transparent; border:0; cursor:pointer;
+  color:var(--fraco); font:inherit; font-size:10px; letter-spacing:.7px;
+  text-transform:uppercase; text-align:left; padding-right:8px;
+  display:flex; align-items:center; border-radius:5px}
+.rot-pista:hover{color:var(--texto); background:var(--painel2)}
+.linha-pista.vazia .rot-pista{color:#4d4d4d}
+.pista{position:relative; flex:1; min-width:0; background:var(--painel2);
+  border:1px solid var(--borda); border-radius:6px; overflow:hidden; cursor:pointer}
+.linha-pista.vazia .pista{background:transparent; border-style:dashed; border-color:#262626}
+.sem-nada{position:absolute; left:9px; top:50%; transform:translateY(-50%);
+  font-size:10px; color:#4d4d4d; font-style:italic}
+
+.tira{position:absolute; inset:0; display:flex}
+.tira img{height:100%; flex:1 1 0; min-width:0; object-fit:cover; pointer-events:none; opacity:.85}
+.onda{position:absolute; inset:0; width:100%; height:100%; display:block}
+
+/* clipes das camadas — cada camada tem sua cor, pra bater o olho e saber o que
+   é o quê sem ler o rótulo */
+.clipe{position:absolute; top:2px; bottom:2px; border-radius:5px; overflow:hidden;
+  border:1px solid transparent; cursor:pointer; display:flex; align-items:center}
+.clipe:hover{filter:brightness(1.25)}
+.clipe.sel{border-color:#fff; box-shadow:0 0 0 1px #fff}
+.rot-clipe{position:relative; z-index:1; padding:0 6px; font-size:10px; font-weight:600;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.clipe.estreito .rot-clipe{display:none}
+
+.c-hl {background:rgba(210,48,137,.45); border-color:rgba(210,48,137,.7)}
+.c-leg{background:rgba(238,134,86,.38); border-color:rgba(238,134,86,.6)}
+.c-br {background:rgba(95,211,155,.32); border-color:rgba(95,211,155,.55)}
+.c-mv {background:rgba(120,150,255,.32); border-color:rgba(120,150,255,.55)}
+.c-vid{background:#1c1c1c; border-color:var(--borda2)}
+.c-aud{background:rgba(210,48,137,.18); border-color:transparent}
+.c-mus{background:rgba(160,110,220,.32); border-color:rgba(160,110,220,.55)}
+.k-flash{background:rgba(255,240,180,.75); border-color:#fff5c2; min-width:3px}
+.k-encerramento{background:repeating-linear-gradient(45deg,#242424 0 6px,#1b1b1b 6px 12px);
+  border-color:var(--borda2)}
+
+/* ---------- regiões do passo 1 ---------- */
+.camada-takes{position:absolute; inset:0; pointer-events:none}
+.regiao{position:absolute; top:0; bottom:0; pointer-events:none}
+.regiao.cortada{background:rgba(8,8,8,.74); border-left:1px dashed #3a3a3a;
+  border-right:1px dashed #3a3a3a}
+.regiao.take{border-radius:6px; box-shadow:inset 0 0 0 1.5px rgba(210,48,137,.6); pointer-events:auto}
+.regiao.take.sel{box-shadow:inset 0 0 0 2px var(--laranja)}
+.regiao.criando{border-radius:6px; background:rgba(238,134,86,.22);
+  box-shadow:inset 0 0 0 1.5px var(--laranja); display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:600; color:#fff; text-shadow:0 1px 3px #000}
+/* take criado à mão: tracejado, pra distinguir do que a IA propôs */
+.regiao.take.manual{box-shadow:inset 0 0 0 1.5px var(--laranja);
+  background:repeating-linear-gradient(45deg,rgba(238,134,86,.10) 0 6px,transparent 6px 12px)}
+/* Fora do corte vence qualquer outro estado — inclusive `manual`, que vinha
+   depois no arquivo e devolvia a borda de ativo a um take já removido. */
+.regiao.take.off,.regiao.take.manual.off{
+  box-shadow:none; border:1.5px dashed rgba(255,92,92,.55);
+  background:rgba(255,92,92,.06); opacity:.75;
+}
+.alca{position:absolute; top:0; bottom:0; width:9px; cursor:ew-resize; pointer-events:auto;
+  background:var(--grad); opacity:0; border-radius:4px}
+.regiao.take:hover .alca{opacity:.8}
+.alca.esq{left:-4px} .alca.dir{right:-4px}
+
+.cursor{position:absolute; top:0; bottom:0; width:2px; background:var(--laranja);
+  pointer-events:none; box-shadow:0 0 9px var(--laranja); z-index:5}
+
+.atalhos{margin-top:8px; margin-left:var(--rot); font-size:10.5px; color:var(--fraco2);
+  display:flex; gap:13px; flex-wrap:wrap; align-items:center}
+kbd{background:var(--painel2); border:1px solid var(--borda); border-bottom-width:2px;
+  border-radius:5px; padding:1px 6px; font:inherit; font-size:10px; margin-right:3px}
+
+/* ================= entrega ================= */
+.painel-entrega{display:none; flex:1; min-height:0; overflow-y:auto; padding:22px 26px}
+body[data-passo="entrega"] .painel-entrega{display:block}
+.entrega-grade{max-width:1240px; margin:0 auto; display:grid;
+  grid-template-columns:minmax(320px,420px) 1fr; gap:32px; align-items:start}
+@media (max-width:1080px){ .entrega-grade{grid-template-columns:1fr} }
+.coluna{display:flex; flex-direction:column; gap:20px}
+.titulo-passo{font-size:17px; font-weight:600}
+.bloco{display:flex; flex-direction:column; gap:9px}
+.bloco > label{font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase; color:var(--fraco)}
+.resumo{font-size:12px; color:var(--fraco); padding:12px 14px; border-radius:9px;
+  background:var(--painel2); border-left:3px solid var(--laranja); line-height:1.6}
+.resumo b{color:var(--texto); font-weight:600}
+
+/* Os alertas são a parte que impede a interface de prometer o que o arquivo
+   não vai cumprir — b-roll ligado sem imagem na pasta, por exemplo. */
+.alertas{display:flex; flex-direction:column; gap:7px}
+.alerta{display:flex; gap:9px; align-items:flex-start; padding:9px 11px; border-radius:9px;
+  font-size:11.5px; line-height:1.5; background:rgba(255,196,107,.09);
+  border:1px solid rgba(255,196,107,.28)}
+.alerta b{flex:none; width:16px; height:16px; border-radius:50%; display:grid; place-items:center;
+  font-size:10px; background:var(--atencao); color:#1a1200; margin-top:1px}
+.alerta small{display:block; margin-top:4px; color:var(--fraco); font-size:10.5px}
+.alerta.n-info{background:var(--painel2); border-color:var(--borda)}
+.alerta.n-info b{background:var(--fraco); color:var(--painel)}
+
+.saida-lista{list-style:none; display:flex; flex-direction:column; gap:6px}
+.saida-lista li{display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:9px 11px; background:var(--painel2); border-radius:8px;
+  border-left:3px solid var(--ok); font-size:11px}
+.saida-lista li.velho{border-left-color:var(--atencao)}
+.saida-lista li.vazio{border-left-color:var(--borda)}
+.saida-lista b{color:var(--texto); font-weight:600; font-size:12px}
+.saida-lista small{display:block; color:var(--fraco); font-size:10px; margin-top:2px}
+.saida-lista li > span{flex:none; font-size:10px; color:var(--ok)}
+.saida-lista li.velho > span{color:var(--atencao)}
+
+/* ---------- capa ---------- */
+.capa-grade{display:grid; grid-template-columns:minmax(200px,300px) 1fr; gap:20px; align-items:start}
+@media (max-width:860px){ .capa-grade{grid-template-columns:1fr} }
+.capa-preview{background:var(--painel2); border:1px solid var(--borda); border-radius:12px;
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+  min-height:280px; position:relative}
+.capa-preview img{width:100%; display:none}
+.capa-preview img.on{display:block}
+.capa-preview canvas{width:100%; display:block}
+.capa-preview canvas.off{display:none}
+#capa-video{display:none}
+.capa-selo{position:absolute; top:9px; left:9px; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; padding:3px 8px; border-radius:20px;
+  background:rgba(0,0,0,.6); color:var(--fraco); pointer-events:none}
+.capa-selo.final{background:var(--grad); color:#fff}
+.capa-controles{display:flex; flex-direction:column; gap:16px}
+.secao{display:flex; flex-direction:column; gap:8px}
+.secao > label{font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase; color:var(--fraco)}
+#capa-t-txt{font-variant-numeric:tabular-nums; font-size:12px; min-width:54px; text-align:right}
+
+.cards{display:flex; gap:8px; flex-wrap:wrap}
+.card{background:var(--painel2); border:1.5px solid var(--borda); border-radius:10px;
+  padding:9px; cursor:pointer; color:var(--texto); font:inherit; font-size:11px;
+  display:flex; flex-direction:column; gap:7px; align-items:center; min-width:74px}
+.card:hover{border-color:var(--borda2)}
+.card.sel{border-color:var(--laranja); box-shadow:0 0 0 1px var(--laranja) inset}
+.card > span:last-child{color:var(--fraco)}
+.card.sel > span:last-child{color:var(--texto)}
+/* miniaturas dos presets: sugerem o arranjo sem precisar renderizar */
+.mini-capa{display:block; width:46px; height:64px; border-radius:5px; position:relative;
+  background:linear-gradient(160deg,#3a4a58,#1b2229); overflow:hidden}
+.mini-capa::after{content:""; position:absolute; left:6px; right:6px; height:5px; border-radius:2px}
+.mc-impacto::after{bottom:10px; background:var(--laranja)}
+.mc-impacto::before{content:""; position:absolute; left:6px; right:16px; bottom:19px;
+  height:4px; border-radius:2px; background:#fff}
+.mc-destaque::after{bottom:12px; background:#fff}
+.mc-destaque::before{content:""; position:absolute; left:6px; width:18px; bottom:19px;
+  height:4px; border-radius:2px; background:var(--laranja)}
+.mc-faixa::after{bottom:8px; height:20px; left:0; right:0; border-radius:0; background:var(--laranja)}
+.mc-editorial::after{bottom:12px; background:#fff; right:20px}
+.mc-editorial::before{content:""; position:absolute; left:6px; width:24px; bottom:19px;
+  height:4px; border-radius:2px; background:var(--rosa)}
+.mc-limpo::after{top:10px; left:14px; right:14px; height:3px; background:rgba(255,255,255,.75)}
+
+/* ---------- avisos, modal, espera ---------- */
+.aviso{position:fixed; bottom:18px; left:50%; transform:translate(-50%,26px);
+  background:var(--painel2); border:1px solid var(--borda); border-left:3px solid var(--rosa);
+  padding:11px 17px; border-radius:9px; font-size:13px; opacity:0; transition:.22s;
+  pointer-events:none; max-width:70vw; z-index:40}
+.aviso.on{opacity:1; transform:translate(-50%,0)}
+.aviso.ruim{border-left-color:var(--perigo)}
+
+.modal{position:fixed; inset:0; background:rgba(8,8,8,.78); z-index:30;
+  display:none; align-items:center; justify-content:center}
+.modal.on{display:flex}
+.caixa-modal{background:var(--painel); border:1px solid var(--borda); border-radius:14px;
+  padding:22px; width:min(560px,92vw); display:flex; flex-direction:column; gap:11px}
+.caixa-modal h2{font-size:17px; font-weight:600}
+.acoes-modal{display:flex; gap:8px; justify-content:flex-end; margin-top:4px}
+.erro-modal{font-size:12px; color:#ff9d9d; min-height:16px}
+
+.trabalhando{position:fixed; inset:0; background:rgba(10,10,10,.72); display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px; z-index:20}
+.trabalhando.on{display:flex}
+.barra{width:220px; height:3px; border-radius:2px; background:var(--painel2); overflow:hidden}
+.barra i{display:block; height:100%; width:40%; background:var(--grad); animation:desliza 1.1s infinite}
+@keyframes desliza{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}

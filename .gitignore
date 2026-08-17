@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Saídas de teste — o validar.py regenera tudo isso, e são ~190 MB
+testes/_saida/
+testes/_enc/
+testes/*.log
+
+# Material processado: proxy, thumbs, wav e renders. Nasce do prep, não se versiona.
+_edit-ia/
+material-teste/edit/
+
+# Pasta de trabalho que o prep cria ao lado do bruto
+edit/
